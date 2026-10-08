@@ -19,6 +19,10 @@ class Utterance:
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Utterance:
+        return cls(**data)
+
 
 @dataclass(slots=True)
 class ExtractResult:
@@ -38,6 +42,31 @@ class ExtractResult:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(slots=True)
+class Phrase:
+    """Near-duplicate utterances merged under one representative text."""
+
+    phrase_id: str
+    text: str
+    norm_key: str
+    count: int
+    project_keys: list[str]
+    first_timestamp: str
+    last_timestamp: str
+    is_correction: bool
+    utterance_ids: list[str]
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class NormalizeResult:
+    phrases: list[Phrase]
+    input_count: int
+    fork_duplicate_count: int
 
 
 @dataclass(slots=True)

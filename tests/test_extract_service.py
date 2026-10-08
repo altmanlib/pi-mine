@@ -5,12 +5,12 @@ from pathlib import Path
 
 from app.services.extract import (
     extract_sessions,
-    is_confirm_utterance,
     is_slash_command,
     join_user_text,
     make_utterance_id,
     project_key_from_source,
 )
+from app.services.normalize import is_confirm_utterance
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sessions"
 

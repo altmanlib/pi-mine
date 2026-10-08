@@ -8,25 +8,9 @@ from pathlib import Path
 from typing import Any
 
 from app.models import ExtractResult, Utterance
+from app.services.normalize import is_confirm_utterance
 
 UTTERANCES_FILENAME = "utterances.jsonl"
-
-# Temporary confirm whitelist for R003; final vocabulary belongs to R004.
-CONFIRM_UTTERANCES = frozenset(
-    {
-        "好",
-        "行",
-        "嗯",
-        "对",
-        "可以",
-        "继续",
-        "ok",
-        "okay",
-        "yes",
-        "y",
-        "continue",
-    }
-)
 
 # Whole-utterance slash commands only. The command name must be followed by
 # whitespace or end of text, so absolute paths and API paths never match.
@@ -54,11 +38,6 @@ def is_slash_command(text: str) -> bool:
     if not stripped.startswith("/"):
         return False
     return _SLASH_COMMAND_RE.fullmatch(stripped) is not None
-
-
-def is_confirm_utterance(text: str) -> bool:
-    """Return True for low-information confirmation short replies."""
-    return text.strip().casefold() in CONFIRM_UTTERANCES
 
 
 def make_utterance_id(session_id: str, entry_id: str) -> str:
@@ -172,3 +151,9 @@ def extract_sessions(sessions_dir: Path, out_dir: Path) -> ExtractResult:
 
     result.project_count = len(project_keys)
     return result
+
+
+def read_utterances(path: Path) -> list[Utterance]:
+    """Load utterances previously written by extract_sessions."""
+    with path.open(encoding="utf-8") as handle:
+        return [Utterance.from_dict(json.loads(line)) for line in handle if line.strip()]
