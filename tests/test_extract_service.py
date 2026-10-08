@@ -38,6 +38,7 @@ def test_slash_command_filter_boundaries() -> None:
     assert is_slash_command("/session")
     assert not is_slash_command("/Users/jellyfish/code/demo 这个目录怎么处理")
     assert not is_slash_command("/api/v1/novels 参数")
+    assert is_slash_command("/review first line\nsecond line")
     assert not is_slash_command("先别改代码，只讨论方案")
 
 
@@ -70,11 +71,13 @@ def test_extract_sessions_writes_filtered_utterances(tmp_path: Path) -> None:
 
     out_file = out_dir / "utterances.jsonl"
     assert out_file.is_file()
-    assert result["utterance_count"] == 6
-    assert result["session_file_count"] == 2
-    assert result["skipped_slash"] == 3
-    assert result["skipped_confirm"] == 3
-    assert result["output_path"] == str(out_file)
+    assert result.utterance_count == 6
+    assert result.session_file_count == 2
+    assert result.skipped_slash == 3
+    assert result.skipped_confirm == 3
+    assert result.output_path == str(out_file)
+    assert result.skipped_malformed == 1
+    assert not (out_dir / "utterances.jsonl.tmp").exists()
 
     rows = [json.loads(line) for line in out_file.read_text(encoding="utf-8").splitlines()]
     texts = [row["text"] for row in rows]
@@ -99,3 +102,21 @@ def test_extract_sessions_writes_filtered_utterances(tmp_path: Path) -> None:
     other = rows[-1]
     assert other["session_id"] == "sess-other"
     assert other["project_key"] == "--Users-jellyfish-code-other--"
+
+
+def test_extract_keeps_previous_output_on_failure(tmp_path: Path, monkeypatch) -> None:
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    out_file = out_dir / "utterances.jsonl"
+    out_file.write_text("previous\n", encoding="utf-8")
+
+    def boom(*_args, **_kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr("app.services.extract._iter_file_utterances", boom)
+    try:
+        extract_sessions(FIXTURES, out_dir)
+    except RuntimeError:
+        pass
+    assert out_file.read_text(encoding="utf-8") == "previous\n"
+    assert not (out_dir / "utterances.jsonl.tmp").exists()

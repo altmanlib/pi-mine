@@ -33,18 +33,3 @@ def collect_status(out_dir: Path) -> dict[str, Any]:
         "out_dir_exists": out_dir.is_dir(),
         "files": files,
     }
-
-
-def status_lines(payload: dict[str, Any]) -> list[str]:
-    """Render a compact human summary."""
-    lines = [
-        f"out_dir: {payload['out_dir']}",
-        f"out_dir_exists: {payload['out_dir_exists']}",
-    ]
-    files = payload["files"]
-    for key, _name in TRACKED_FILES:
-        item = files[key]
-        mark = "yes" if item["exists"] else "no"
-        size = item["size"]
-        lines.append(f"{key}: {mark} ({size} bytes)")
-    return lines

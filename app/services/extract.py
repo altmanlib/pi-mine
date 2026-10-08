@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-from app.models import Utterance
+from app.models import ExtractResult, Utterance
 
 UTTERANCES_FILENAME = "utterances.jsonl"
 
@@ -28,20 +28,9 @@ CONFIRM_UTTERANCES = frozenset(
     }
 )
 
-# Whole-utterance slash commands only; absolute paths and API paths stay.
-_SLASH_COMMAND_RE = re.compile(r"^/[A-Za-z][\w-]*(?:\s+.*)?$")
-_ABSOLUTE_OR_API_PREFIXES = (
-    "/Users/",
-    "/home/",
-    "/var/",
-    "/tmp/",
-    "/etc/",
-    "/opt/",
-    "/usr/",
-    "/api/",
-    "/v1/",
-    "/v2/",
-)
+# Whole-utterance slash commands only. The command name must be followed by
+# whitespace or end of text, so absolute paths and API paths never match.
+_SLASH_COMMAND_RE = re.compile(r"/[A-Za-z][\w-]*(?:\s.*)?", re.DOTALL)
 
 
 def join_user_text(content: Any) -> str:
@@ -63,8 +52,6 @@ def is_slash_command(text: str) -> bool:
     """Return True when the whole utterance is a slash command."""
     stripped = text.strip()
     if not stripped.startswith("/"):
-        return False
-    if stripped.startswith(_ABSOLUTE_OR_API_PREFIXES):
         return False
     return _SLASH_COMMAND_RE.fullmatch(stripped) is not None
 
@@ -93,26 +80,18 @@ def _iter_session_files(sessions_dir: Path) -> Iterator[Path]:
 
 
 def _parse_json_line(line: str) -> dict[str, Any] | None:
+    """Parse one JSONL line; return None for blank lines, raise ValueError unless it is a JSON object."""
     stripped = line.strip()
     if not stripped:
         return None
-    try:
-        payload = json.loads(stripped)
-    except json.JSONDecodeError:
-        return None
-    if isinstance(payload, dict):
-        return payload
-    return None
+    payload = json.loads(stripped)
+    if not isinstance(payload, dict):
+        raise ValueError("JSONL line is not an object")
+    return payload
 
 
-def _extract_from_file(path: Path, sessions_dir: Path) -> tuple[list[Utterance], dict[str, int]]:
-    stats = {
-        "skipped_slash": 0,
-        "skipped_confirm": 0,
-        "skipped_empty": 0,
-        "skipped_no_session": 0,
-    }
-    utterances: list[Utterance] = []
+def _iter_file_utterances(path: Path, sessions_dir: Path, result: ExtractResult) -> Iterator[Utterance]:
+    """Yield kept utterances from one session file, counting skips into result."""
     session_id = ""
     cwd = ""
     relative = path.relative_to(sessions_dir).as_posix()
@@ -120,7 +99,11 @@ def _extract_from_file(path: Path, sessions_dir: Path) -> tuple[list[Utterance],
 
     with path.open(encoding="utf-8", errors="replace") as handle:
         for line in handle:
-            entry = _parse_json_line(line)
+            try:
+                entry = _parse_json_line(line)
+            except ValueError:  # JSONDecodeError is a ValueError subclass
+                result.skipped_malformed += 1
+                continue
             if entry is None:
                 continue
 
@@ -138,88 +121,54 @@ def _extract_from_file(path: Path, sessions_dir: Path) -> tuple[list[Utterance],
                 continue
 
             if not session_id:
-                stats["skipped_no_session"] += 1
+                result.skipped_no_session += 1
                 continue
 
             text = join_user_text(message.get("content")).strip()
             if not text:
-                stats["skipped_empty"] += 1
+                result.skipped_empty += 1
                 continue
             if is_slash_command(text):
-                stats["skipped_slash"] += 1
+                result.skipped_slash += 1
                 continue
             if is_confirm_utterance(text):
-                stats["skipped_confirm"] += 1
+                result.skipped_confirm += 1
                 continue
 
             entry_id = str(entry.get("id") or "")
-            timestamp = str(entry.get("timestamp") or "")
-            utterances.append(
-                Utterance(
-                    utterance_id=make_utterance_id(session_id, entry_id),
-                    session_id=session_id,
-                    entry_id=entry_id,
-                    timestamp=timestamp,
-                    cwd=cwd,
-                    project_key=project_key,
-                    text=text,
-                    char_len=len(text),
-                    source_file=relative,
-                )
+            yield Utterance(
+                utterance_id=make_utterance_id(session_id, entry_id),
+                session_id=session_id,
+                entry_id=entry_id,
+                timestamp=str(entry.get("timestamp") or ""),
+                cwd=cwd,
+                project_key=project_key,
+                text=text,
+                char_len=len(text),
+                source_file=relative,
             )
 
-    return utterances, stats
 
-
-def extract_sessions(sessions_dir: Path, out_dir: Path) -> dict[str, Any]:
-    """Scan sessions JSONL files and write filtered utterances.jsonl."""
+def extract_sessions(sessions_dir: Path, out_dir: Path) -> ExtractResult:
+    """Scan sessions JSONL files and atomically write filtered utterances.jsonl."""
     out_dir.mkdir(parents=True, exist_ok=True)
     output_path = out_dir / UTTERANCES_FILENAME
-
-    utterance_count = 0
-    session_file_count = 0
-    skipped_slash = 0
-    skipped_confirm = 0
-    skipped_empty = 0
-    skipped_no_session = 0
+    tmp_path = output_path.with_name(output_path.name + ".tmp")
+    result = ExtractResult(sessions_dir=str(sessions_dir), out_dir=str(out_dir), output_path=str(output_path))
     project_keys: set[str] = set()
 
-    with output_path.open("w", encoding="utf-8") as handle:
-        for path in _iter_session_files(sessions_dir):
-            session_file_count += 1
-            utterances, stats = _extract_from_file(path, sessions_dir)
-            skipped_slash += stats["skipped_slash"]
-            skipped_confirm += stats["skipped_confirm"]
-            skipped_empty += stats["skipped_empty"]
-            skipped_no_session += stats["skipped_no_session"]
-            for utterance in utterances:
-                handle.write(json.dumps(utterance.to_dict(), ensure_ascii=False) + "\n")
-                utterance_count += 1
-                project_keys.add(utterance.project_key)
+    try:
+        with tmp_path.open("w", encoding="utf-8") as handle:
+            for path in _iter_session_files(sessions_dir):
+                result.session_file_count += 1
+                for utterance in _iter_file_utterances(path, sessions_dir, result):
+                    handle.write(json.dumps(utterance.to_dict(), ensure_ascii=False) + "\n")
+                    result.utterance_count += 1
+                    project_keys.add(utterance.project_key)
+        tmp_path.replace(output_path)
+    except BaseException:
+        tmp_path.unlink(missing_ok=True)
+        raise
 
-    return {
-        "sessions_dir": str(sessions_dir),
-        "out_dir": str(out_dir),
-        "output_path": str(output_path),
-        "session_file_count": session_file_count,
-        "utterance_count": utterance_count,
-        "project_count": len(project_keys),
-        "skipped_slash": skipped_slash,
-        "skipped_confirm": skipped_confirm,
-        "skipped_empty": skipped_empty,
-        "skipped_no_session": skipped_no_session,
-    }
-
-
-def extract_summary_lines(payload: dict[str, Any]) -> list[str]:
-    """Render a compact human summary for extract results."""
-    return [
-        f"sessions_dir: {payload['sessions_dir']}",
-        f"output_path: {payload['output_path']}",
-        f"session_file_count: {payload['session_file_count']}",
-        f"utterance_count: {payload['utterance_count']}",
-        f"project_count: {payload['project_count']}",
-        f"skipped_slash: {payload['skipped_slash']}",
-        f"skipped_confirm: {payload['skipped_confirm']}",
-        f"skipped_empty: {payload['skipped_empty']}",
-    ]
+    result.project_count = len(project_keys)
+    return result
