@@ -26,4 +26,4 @@ updated: 2026-10-08
 | 文档 | type | status | 说明 |
 |---|---|---|---|
 | [design/2026-10-08-01-pipeline.md](design/2026-10-08-01-pipeline.md) | design | draft | 提取 / 语义合并 / 候选与画像管线 |
-| [design/2026-10-08-02-optional-embedding.md](design/2026-10-08-02-optional-embedding.md) | design | draft | R008 可选 embedding：SiliconFlow + Qwen3-Embedding-8B |
+| [design/2026-10-08-02-optional-embedding.md](design/2026-10-08-02-optional-embedding.md) | design | draft | 可选 embedding（SiliconFlow + Qwen3-Embedding-8B）与 LLM（CPA）外部调用约定 |

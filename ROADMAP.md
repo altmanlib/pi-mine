@@ -23,12 +23,14 @@
 
 ## 下一步
 
-- R007 候选裁定工作流 — 明确人工如何把强候选标成 AGENTS / skill / prompt / discard；是否需要 `already_codified` 对照现有 AGENTS（依赖 R006）
+- R008 embedding 语义聚类 — SiliconFlow `Qwen/Qwen3-Embedding-8B`（`dimensions=1024`）对 phrase 代表句做语义聚类，把只出现一次的长尾纳入统计；先做全量试验并抽查长尾簇质量，再定接入方式；可关闭、可回退 TF-IDF（依赖 R006）
 
 ## 规划中
 
 - R011 聚类区分否定句 — 字符 n-gram 把「你不要启动 dev server」与「启动 dev server 我看看」归为同簇，约束簇 count 偏高；考虑 `is_correction` 不同的 phrase 不入同簇（依赖 R005；触发：R007 裁定时约束簇失真影响判断）
-- R008 可选 embedding / LLM 簇命名 — 仅当 TF-IDF 同义拆散严重或画像可读性不足时启动；默认不进主路径；供应商/模型 SiliconFlow `Qwen/Qwen3-Embedding-8B`（`dimensions=1024`）；允许外发 normalize 后的 phrase 代表句，禁止上传原始 sessions（依赖 R006；触发：人工抽查判定需要）
+- R012 LLM 综合出结论 — 经 CPA 把簇归纳为结论式画像与资产建议；每条结论附依据（候选编号或簇 id、次数、项目数）；可关闭（依赖 R008）
+- R013 确定性结论表 — 重复长指令与带参数句式 → prompt template 候选；同 session 内触发词先后顺序 → 工作流链条；可作为 R012 输入（依赖 R006）
+- R007 候选裁定工作流 — 明确人工如何把强候选标成 AGENTS / skill / prompt / discard；是否需要 `already_codified` 对照现有 AGENTS（依赖 R012；裁定对象是结论而非清单）
 
 ## 已完成
 

@@ -20,7 +20,7 @@
 | [README.md](README.md) | 用法与产出说明 |
 | [docs/README.md](docs/README.md) | 文档索引与格式约定 |
 | [docs/design/2026-10-08-01-pipeline.md](docs/design/2026-10-08-01-pipeline.md) | 管线设计：提取 / 合并 / 候选 / 画像 |
-| [docs/design/2026-10-08-02-optional-embedding.md](docs/design/2026-10-08-02-optional-embedding.md) | R008 可选 embedding 供应商/模型约定 |
+| [docs/design/2026-10-08-02-optional-embedding.md](docs/design/2026-10-08-02-optional-embedding.md) | 可选 embedding（SiliconFlow）与 LLM（CPA）外部调用约定与外发边界 |
 
 实现行为变化时同步更新对应文档。设计未决项不得静默固化；需要拍板的记入 ROADMAP「待决策」，不要自行假设。
 

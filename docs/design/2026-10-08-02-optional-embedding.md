@@ -1,19 +1,22 @@
 ---
-title: 可选 Embedding 供应商约定
+title: 可选 Embedding 与 LLM 外部调用约定
 type: design
 status: draft
 updated: 2026-10-08
 ---
 
-# 可选 Embedding 供应商约定
+# 可选 Embedding 与 LLM 外部调用约定
 
 ## 1. 目标与范围
 
-为路线图 [R008](../../ROADMAP.md)（可选 embedding / LLM 簇命名）预先固定供应商与模型，避免触发时再选型。
+固定可选路径的外部调用方式：
 
-本设计**不改变**第一版主路径：主路径仍是 TF-IDF / 确定性聚类。仅在人工抽查判定同义拆散严重或画像可读性不足时，才允许启用可选 `--embedding` 路径。
+- [R008](../../ROADMAP.md) embedding 语义聚类：把意思相近、写法不同的发言归到一起，覆盖频次法看不到的长尾（全量中约 80% 的发言只出现一次）
+- R012 LLM 综合：把簇归纳成结论式画像与资产建议
 
-## 2. 已定选择
+主路径仍是 TF-IDF / 确定性聚类；两条可选路径均须可关闭、可回退。
+
+## 2. Embedding
 
 | 项 | 选择 |
 |---|---|
@@ -35,22 +38,31 @@ updated: 2026-10-08
 - Quickstart：<https://api-docs.siliconflow.cn/docs/userguide/quickstart>
 - Embeddings：<https://api-docs.siliconflow.cn/docs/api/embeddings-post>
 
-## 3. 数据外发边界
+## 3. LLM
+
+| 项 | 选择 |
+|---|---|
+| 通道 | 本机 CPA（CLIProxyAPI），OpenAI 兼容协议 |
+| Base URL | 环境变量 `CLIPROXYAPI_BASE_URL` |
+| API Key | 环境变量 `CLIPROXYAPI_API_KEY`（不入库、不写进仓库配置） |
+| 模型 | 实现 R012 时选定 |
+
+输出约束：每条结论必须附依据（候选编号或簇 id、次数、项目数），便于人工核对。
+
+## 4. 数据外发边界
 
 已拍板：
 
 - **禁止**：上传原始 session JSONL，或把完整 utterance 导出原样发给外部服务
-- **允许**：可选 embedding / LLM 路径把 **normalize 后的 phrase 代表句** 发给 SiliconFlow
-- 默认仍不进 `mine` 主路径；实现时须可关闭、可回退到纯本地 TF-IDF
+- **允许**：把 **normalize 后的 phrase 代表句** 及其统计（次数、项目数）发给 SiliconFlow（embedding）与 CPA（LLM）
 
-## 4. 触发条件
+## 5. 首步验证
 
-- 仍以 R008 为准：仅当 TF-IDF 同义拆散严重或画像可读性不足
-- 不把 embedding 设为强制依赖
+R008 先做低成本试验：全量 phrase 代表句做 embedding，抽查长尾能否聚成有意义的簇，再决定接入方式。
 
-## 5. 明确不做
+## 6. 明确不做
 
-- 第一版强制 embedding
+- 把 embedding 或 LLM 设为 `mine` 主路径的强制依赖
 - 把 API key 写入仓库或 `out/`
 - 用 embedding 替换 TF-IDF 作为唯一聚类手段
 - 上传原始 sessions
