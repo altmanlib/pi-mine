@@ -75,11 +75,13 @@ out/               # 生成物，gitignore
 - 第一版强制 embedding 或强制 LLM 总结
 - 会话清理 / 删除（与 `sessions-clean` 无关）
 
-## 7. Git 与 ROADMAP
+## 7. Git 工作流
 
-- 提交信息：单行 `type: summary`（`feat` / `fix` / `docs` / `chore` / `style` / `refactor` / `test`）
-- 对应 roadmap 任务时在末尾附编号，如 `feat: extract user utterances (R003)`
+- 开发分支：`agent/develop`，agent 的所有改动都在该分支进行，不直接改动其他分支
+- 在 `agent/develop` 上，完成一个功能或任务后，agent 可自行决定提交，无需逐次征求同意
+- 提交信息：单行 `type: summary`（`feat` / `fix` / `docs` / `chore` / `style` / `refactor` / `test`）；对应 roadmap 任务时在末尾附编号，如 `feat: extract user utterances (R003)`
 - ROADMAP 状态变更与对应工作放在同一个提交里
+- 合并到其他分支、`git push` 必须由用户明确要求后才能执行
 
 ## 8. 开发命令
 
