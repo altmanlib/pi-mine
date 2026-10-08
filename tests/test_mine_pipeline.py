@@ -6,12 +6,12 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from app.cli import cli
-from app.models import Phrase
+from app.models import MineSummary, Phrase
 from app.services.cluster import cluster_phrases
 from app.services.extract import extract_sessions
-from app.services.normalize import is_correction_key, normalize_key
-from app.services.rank import classify_kind, rank_clusters
-from app.services.render import display_cwd
+from app.services.normalize import is_correction_key, mask_params, normalize_key
+from app.services.rank import classify_kind, display_label, rank_clusters
+from app.services.render import display_cwd, render_candidates_md
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sessions"
 
@@ -80,6 +80,63 @@ def test_rank_skips_bare_paths() -> None:
     assert rank_clusters(phrases, [[0], [1]], min_count=3, min_projects=1) == []
 
 
+def test_mask_params_collapses_versions_and_keeps_bare_values() -> None:
+    assert mask_params("发版 0.7.0", "P", "N") == "发版 N"
+    assert mask_params("@docs/plan/a.md 执行此方案", "P", "N") == "P 执行此方案"
+    assert mask_params("docs/plan/a.md", "P", "N") == "docs/plan/a.md"
+
+
+def test_display_label_masks_params_and_shortens_templates() -> None:
+    assert display_label(phrase("@docs/plan/a.md 执行此方案"), "workflow") == "‹路径› 执行此方案"
+    skill = phrase('<skill name="code-review" location="/x">' + "a" * 300)
+    assert display_label(skill, "template") == "skill: code-review"
+    prompt = phrase("# 执行：数据库备份\n\n- 步骤" + "a" * 300)
+    assert display_label(prompt, "template") == "执行：数据库备份"
+
+
+def test_rank_aggregates_variants_by_pattern() -> None:
+    phrases = [
+        phrase("read docs/a.md", count=4, projects=("a", "b", "c")),
+        phrase("read docs/b.md", count=2),
+        phrase("read this repo", count=1),
+    ]
+    [candidate] = rank_clusters(phrases, [[0, 1, 2]], min_count=3, min_projects=3)
+    assert candidate.label == "read ‹路径›"
+    assert candidate.variant_count == 2
+    assert [(v.text, v.count) for v in candidate.variants] == [("read ‹路径›", 6), ("read this repo", 1)]
+
+
+def test_render_candidates_md_groups_by_destination() -> None:
+    phrases = [
+        phrase("先别改代码", count=5, projects=("a", "b", "c")),
+        phrase("commit", count=9, projects=("a", "b", "c")),
+        phrase("发版", count=3),
+    ]
+    candidates = rank_clusters(phrases, [[0], [1], [2]], min_count=3, min_projects=3)
+    summary = MineSummary(
+        out_dir="out",
+        min_count=3,
+        min_projects=3,
+        utterance_count=17,
+        phrase_count=3,
+        cluster_count=3,
+        candidate_count=3,
+        strong_count=2,
+        fork_duplicate_count=0,
+        candidates_md_path="",
+        candidates_json_path="",
+        persona_path="",
+    )
+    text = render_candidates_md(candidates, summary)
+    constraint = text.index("## 约束与红线 → AGENTS（1）")
+    workflow = text.index("## 工作流 → skill / prompt（1）")
+    medium = text.index("## 附录 B：覆盖不足（medium）（1）")
+    assert constraint < workflow < medium
+    assert "| 1 | 先别改代码 | 5 | 3 |" in text
+    assert "| 2 | commit | 9 | 3 |" in text
+    assert "| 3 | 发版 | 3 | 1 | workflow | prompt |" in text
+
+
 def test_display_cwd_replaces_home_prefix() -> None:
     assert display_cwd("/Users/someone/code/demo") == "~/code/demo"
     assert display_cwd("/srv/app") == "/srv/app"
@@ -96,7 +153,7 @@ def test_mine_cli_writes_outputs(tmp_path: Path) -> None:
 
     payload = json.loads((tmp_path / "candidates.json").read_text(encoding="utf-8"))
     assert len(payload["candidates"]) == summary["candidate_count"]
-    assert "# Candidates" in (tmp_path / "candidates.md").read_text(encoding="utf-8")
+    assert "# 资产候选" in (tmp_path / "candidates.md").read_text(encoding="utf-8")
     persona = (tmp_path / "persona.md").read_text(encoding="utf-8")
     assert "## Project distribution" in persona
     assert "| ~/code/demo/proj |" in persona

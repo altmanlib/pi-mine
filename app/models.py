@@ -70,6 +70,14 @@ class NormalizeResult:
 
 
 @dataclass(slots=True)
+class Variant:
+    """One merged phrase inside a candidate cluster."""
+
+    text: str
+    count: int
+
+
+@dataclass(slots=True)
 class Candidate:
     candidate_id: str
     label: str
@@ -79,7 +87,8 @@ class Candidate:
     kind: str
     suggested_dest: str
     confidence: str
-    sample_texts: list[str]
+    variant_count: int
+    variants: list[Variant]
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

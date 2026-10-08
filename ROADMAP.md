@@ -27,10 +27,12 @@
 
 ## 规划中
 
+- R011 聚类区分否定句 — 字符 n-gram 把「你不要启动 dev server」与「启动 dev server 我看看」归为同簇，约束簇 count 偏高；考虑 `is_correction` 不同的 phrase 不入同簇（依赖 R005；触发：R007 裁定时约束簇失真影响判断）
 - R008 可选 embedding / LLM 簇命名 — 仅当 TF-IDF 同义拆散严重或画像可读性不足时启动；默认不进主路径；供应商/模型 SiliconFlow `Qwen/Qwen3-Embedding-8B`（`dimensions=1024`）；允许外发 normalize 后的 phrase 代表句，禁止上传原始 sessions（依赖 R006；触发：人工抽查判定需要）
 
 ## 已完成
 
+- R010 candidates.md 可读性 — 按去向分节（约束 / 偏好 / 工具 / 工作流 + 附录）、全局序号；label 与变体用 `‹路径›` / `‹数字›` 掩码并按句式聚合计数；template 显示 skill 名或模板首行；`Candidate.sample_texts` 改为 `variants` / `variant_count`；1236 行 → 188 行；39 tests
 - R006 全量试跑与阈值校准 — 抽查 Top 候选后：低信息短句（同意/hi/选项回答）移入 extract 过滤；纠偏、工作流、工具词表扩充；`strong` 改为以项目覆盖为主（长期高频为辅）；裸路径簇不入候选；基线 8523 utterances → 149 candidates（strong 114）；35 tests
 - R005 cluster + rank + render — `cluster`（TF-IDF leader 聚类）/ `rank`（kind 规则 + strong/medium）/ `render` / `mine` 编排；`mine` 命令可用并写出 candidates.md/json 与 persona.md；`fsutil.atomic_text_writer`；34 tests；真实数据 8675 utterances → 7148 phrases → 6711 clusters → 160 candidates（strong 132）
 - R004 normalize 近重复与清洗 — `services/normalize.py`：`normalize_key` / `match_key`、确认与纠偏词表、fork 去重、bigram Jaccard 近重复合并为 `Phrase`；确认过滤迁入 normalize；28 tests；真实数据 8694 条 → 7148 phrases（0.2s）

@@ -89,18 +89,24 @@ def normalize_key(text: str) -> str:
 
 _CHOICE_ANSWER_RE = re.compile(r"[a-z0-9]")
 _PATH_RE = re.compile(r"\S*/\S*")
-_NUMBER_RE = re.compile(r"\d+")
+# Dotted / dashed digit runs (versions, dates, times) count as one number.
+_NUMBER_RE = re.compile(r"\d+(?:[.:\-]\d+)*")
+
+
+def mask_params(text: str, path_token: str, number_token: str) -> str:
+    """Replace path-like tokens and numbers with placeholders.
+
+    Text that would contain only placeholders (bare paths, bare numbers) is returned unchanged.
+    """
+    masked = _NUMBER_RE.sub(number_token, _PATH_RE.sub(path_token, text))
+    if not any(char.isalnum() for char in masked.replace(number_token, "").replace(path_token, "")):
+        return text
+    return masked
 
 
 def match_key(norm_key: str) -> str:
-    """Mask path-like tokens and numbers so parameterized variants of one phrase share a key.
-
-    Keys that would contain only placeholders (bare paths, bare numbers) stay unmasked.
-    """
-    masked = _NUMBER_RE.sub("§n", _PATH_RE.sub("§p", norm_key))
-    if not any(char.isalnum() for char in masked.replace("§n", "").replace("§p", "")):
-        return norm_key
-    return masked
+    """Key shared by parameterized variants of one phrase (paths and numbers masked)."""
+    return mask_params(norm_key, "§p", "§n")
 
 
 def _is_edge_noise(char: str) -> bool:
