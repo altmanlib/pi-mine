@@ -10,13 +10,6 @@ def test_version() -> None:
     assert "0.1.0" in result.output
 
 
-def test_extract_not_implemented() -> None:
-    runner = CliRunner()
-    result = runner.invoke(cli, ["extract"])
-    assert result.exit_code != 0
-    assert "not implemented" in result.output
-
-
 def test_status_human(tmp_path) -> None:
     runner = CliRunner()
     result = runner.invoke(cli, ["status", "--out", str(tmp_path)])

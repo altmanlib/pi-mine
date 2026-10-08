@@ -1,0 +1,4 @@
+{"type": "session", "version": 3, "id": "sess-other", "timestamp": "2026-06-10T01:00:00.000Z", "cwd": "/Users/jellyfish/code/other"}
+{"type": "message", "id": "o1", "parentId": null, "timestamp": "2026-06-10T01:01:00.000Z", "message": {"role": "user", "content": [{"type": "text", "text": "帮我提交"}], "timestamp": 1}}
+{"type": "message", "id": "o2", "parentId": "o1", "timestamp": "2026-06-10T01:02:00.000Z", "message": {"role": "user", "content": [{"type": "text", "text": "/session"}], "timestamp": 2}}
+"not-json-line"

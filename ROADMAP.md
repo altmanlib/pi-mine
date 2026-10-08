@@ -23,11 +23,10 @@
 
 ## 下一步
 
-- R003 实现 extract — `services` 从 sessions JSONL 提取 user 发言，写出 `out/utterances.jsonl`；fixture 测试覆盖文本块拼接、slash/确认句过滤边界、路径展开；`pi-mine extract` / `status` 可对真实目录冒烟（依赖 R002）
+- R004 normalize 近重复与清洗 — 归一化键、确认句/纠偏句词表、近重复合并为 phrase；输出可供 cluster 使用的中间结构（依赖 R003）
 
 ## 规划中
 
-- R004 normalize 近重复与清洗 — 归一化键、确认句/纠偏句词表、近重复合并为 phrase；输出可供 cluster 使用的中间结构（依赖 R003）
 - R005 cluster + rank + render — 引入 scikit-learn 做 TF-IDF 句式聚类；按频次与项目覆盖分级；写出 `candidates.md` / `candidates.json` / `persona.md`（依赖 R004）
 - R006 全量试跑与阈值校准 — 对 `~/.pi/agent/sessions` 跑通 extract→mine；人工抽查 Top 候选，调整 `min-count` / `min-projects` 与假阳性规则（依赖 R005）
 - R007 候选裁定工作流 — 明确人工如何把强候选标成 AGENTS / skill / prompt / discard；是否需要 `already_codified` 对照现有 AGENTS（依赖 R006；触发：首轮候选清单可用后）
@@ -35,5 +34,6 @@
 
 ## 已完成
 
+- R003 实现 extract — `services.extract` 流式读 JSONL；文本块拼接；slash/确认句过滤；写出 `out/utterances.jsonl`；17 tests；真实目录冒烟 1295 files → 8685 utterances / 90 projects
 - R002 骨架收敛 — 路径 `expanduser().resolve()`；运行时依赖仅 click；`options` / `output`；pyright 入 `make check`；`status` 可运行；8 tests 通过
 - R001 正式包骨架 — `app/` + Makefile + AGENTS + 设计文档；Click 子命令占位；对齐 fishx 正式 Python 工程形态

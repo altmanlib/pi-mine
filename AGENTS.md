@@ -66,7 +66,7 @@ out/               # 生成物，gitignore
 - 项目命令通过 `uv run ...` 或 `make ...` 执行
 - 输出默认人类可读；叶命令需要机器消费时提供 `--json`
 - 不捕获裸 `Exception` 后静默忽略
-- Import 默认文件顶部
+- Import 必须在文件顶部；禁止函数 / 方法内 import。ruff `PLC0415` 强制；极少数必要延迟导入须同行标注 `# noqa: PLC0415` 并写明原因
 
 ## 6. 明确不做
 
