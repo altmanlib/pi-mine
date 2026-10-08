@@ -15,21 +15,24 @@
 
 ## 待决策
 
-无
+- R009 可选 embedding 是否允许外发 phrase — SiliconFlow `Qwen/Qwen3-Embedding-8B` 已定为 R008 供应商/模型（见 `docs/design/2026-10-08-02-optional-embedding.md`）；启用会把 normalize 后的代表句发到外部 API，与现行「不上传衍生语料」冲突。需确认：禁止外发 / 仅本地模型 / 允许 SiliconFlow 且限定只发 phrase。阻塞 R008 实现
 
 ## 进行中
 
-无
+- R005 cluster + rank + render — 引入 scikit-learn 做 TF-IDF 句式聚类；按频次与项目覆盖分级；写出 `candidates.md` / `candidates.json` / `persona.md`（依赖 R004）
+  - 已做：方案确定（services 拆 cluster / rank / render / mine；leader 聚类，按 count 降序、余弦阈值归并）
+  - 未做：`uv add scikit-learn`；cluster；rank（kind 规则 + 分级）；render（candidates.md/json、persona.md）；mine 命令接线；测试；真实数据冒烟；更新设计文档与 README
+  - 注意：聚类阈值、kind 关键词为 v1 默认值，R006 校准；不引入 embedding / LLM
 
 ## 下一步
 
-- R005 cluster + rank + render — 引入 scikit-learn 做 TF-IDF 句式聚类；按频次与项目覆盖分级；写出 `candidates.md` / `candidates.json` / `persona.md`（依赖 R004）
+无
 
 ## 规划中
 
 - R006 全量试跑与阈值校准 — 对 `~/.pi/agent/sessions` 跑通 extract→mine；人工抽查 Top 候选，调整 `min-count` / `min-projects` 与假阳性规则（依赖 R005）
 - R007 候选裁定工作流 — 明确人工如何把强候选标成 AGENTS / skill / prompt / discard；是否需要 `already_codified` 对照现有 AGENTS（依赖 R006；触发：首轮候选清单可用后）
-- R008 可选 embedding / LLM 簇命名 — 仅当 TF-IDF 同义拆散严重或画像可读性不足时启动；默认不进主路径（依赖 R006；触发：人工抽查判定需要）
+- R008 可选 embedding / LLM 簇命名 — 仅当 TF-IDF 同义拆散严重或画像可读性不足时启动；默认不进主路径；供应商/模型已定为 SiliconFlow `Qwen/Qwen3-Embedding-8B`（`dimensions=1024`）（依赖 R006、R009；触发：人工抽查判定需要）
 
 ## 已完成
 
