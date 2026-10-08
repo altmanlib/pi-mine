@@ -83,3 +83,24 @@ class Candidate:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(slots=True)
+class MineSummary:
+    """Outcome of one mine run."""
+
+    out_dir: str
+    min_count: int
+    min_projects: int
+    utterance_count: int
+    phrase_count: int
+    cluster_count: int
+    candidate_count: int
+    strong_count: int
+    fork_duplicate_count: int
+    candidates_md_path: str
+    candidates_json_path: str
+    persona_path: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)

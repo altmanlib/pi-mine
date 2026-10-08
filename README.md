@@ -15,7 +15,7 @@ cd ~/code/fishx/pi-mine
 uv sync
 
 uv run pi-mine extract
-uv run pi-mine mine
+uv run pi-mine mine [--min-count 3] [--min-projects 3]
 ls out/
 ```
 

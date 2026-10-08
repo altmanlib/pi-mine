@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from app.models import ExtractResult, Utterance
+from app.services.fsutil import atomic_text_writer
 from app.services.normalize import is_confirm_utterance
 
 UTTERANCES_FILENAME = "utterances.jsonl"
@@ -130,24 +131,17 @@ def _iter_file_utterances(path: Path, sessions_dir: Path, result: ExtractResult)
 
 def extract_sessions(sessions_dir: Path, out_dir: Path) -> ExtractResult:
     """Scan sessions JSONL files and atomically write filtered utterances.jsonl."""
-    out_dir.mkdir(parents=True, exist_ok=True)
     output_path = out_dir / UTTERANCES_FILENAME
-    tmp_path = output_path.with_name(output_path.name + ".tmp")
     result = ExtractResult(sessions_dir=str(sessions_dir), out_dir=str(out_dir), output_path=str(output_path))
     project_keys: set[str] = set()
 
-    try:
-        with tmp_path.open("w", encoding="utf-8") as handle:
-            for path in _iter_session_files(sessions_dir):
-                result.session_file_count += 1
-                for utterance in _iter_file_utterances(path, sessions_dir, result):
-                    handle.write(json.dumps(utterance.to_dict(), ensure_ascii=False) + "\n")
-                    result.utterance_count += 1
-                    project_keys.add(utterance.project_key)
-        tmp_path.replace(output_path)
-    except BaseException:
-        tmp_path.unlink(missing_ok=True)
-        raise
+    with atomic_text_writer(output_path) as handle:
+        for path in _iter_session_files(sessions_dir):
+            result.session_file_count += 1
+            for utterance in _iter_file_utterances(path, sessions_dir, result):
+                handle.write(json.dumps(utterance.to_dict(), ensure_ascii=False) + "\n")
+                result.utterance_count += 1
+                project_keys.add(utterance.project_key)
 
     result.project_count = len(project_keys)
     return result
