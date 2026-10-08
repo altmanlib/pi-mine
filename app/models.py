@@ -79,6 +79,7 @@ class Variant:
 
 @dataclass(slots=True)
 class Candidate:
+    number: int
     candidate_id: str
     label: str
     count: int
@@ -89,6 +90,45 @@ class Candidate:
     confidence: str
     variant_count: int
     variants: list[Variant]
+    project_keys: list[str]
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Candidate:
+        fields = dict(data)
+        fields["variants"] = [Variant(**item) for item in data["variants"]]
+        return cls(**fields)
+
+
+@dataclass(slots=True)
+class Conclusion:
+    """One LLM-synthesized statement, with evidence and stats computed locally."""
+
+    statement: str
+    kind: str
+    dest: str
+    evidence: list[int]
+    count: int
+    project_count: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class SynthesisResult:
+    """Outcome of one synthesize run."""
+
+    model: str
+    cluster_backend: str
+    candidate_count: int
+    summary: list[Conclusion]
+    conclusions: list[Conclusion]
+    dropped_count: int
+    conclusions_md_path: str
+    conclusions_json_path: str
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

@@ -31,7 +31,7 @@
 | Python | `>=3.14`（`.python-version` 固定） |
 | 包管理 | 仅 `uv`（`uv add` / `uv remove`）；禁止 pip 或手编依赖版本后不 `uv lock` |
 | CLI | Click |
-| 运行时依赖 | 现阶段仅 `click`；`scikit-learn` 等到 `mine` 聚类再加 |
+| 运行时依赖 | `click`、`scikit-learn`、`numpy`、`scipy`；HTTP 调用用标准库 `urllib`，不引入 SDK |
 | 分析默认 | 离线统计；可选 embedding / LLM 后置允许走外部 API，但不得上传原始 sessions |
 | 类型检查 | pyright `standard` |
 | 缓存目录 | `.cache/`（pytest / ruff），不入库 |
@@ -91,6 +91,7 @@ uv sync
 make fmt
 make check          # lint + typecheck + test
 uv run pi-mine extract
-uv run pi-mine mine
+uv run pi-mine mine [--embedding]
+uv run pi-mine synthesize
 uv run pi-mine status
 ```

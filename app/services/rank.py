@@ -63,6 +63,8 @@ _DESTINATIONS: dict[tuple[str, str], str] = {
     ("workflow", "medium"): "prompt",
 }
 _CONFIDENCE_ORDER = {"strong": 0, "medium": 1}
+# Order of sections in candidates.md; candidate numbers follow this order.
+REVIEW_SECTIONS = ("constraint", "preference", "tooling", "workflow", "other", "medium", "template")
 
 
 def classify_kind(phrase: Phrase) -> str:
@@ -139,7 +141,8 @@ def rank_clusters(
         leader = group[0]
         if _is_bare_path(leader.text):
             continue
-        project_count = len({key for p in group for key in p.project_keys})
+        project_keys = sorted({key for p in group for key in p.project_keys})
+        project_count = len(project_keys)
         day_span = _day_span(min(p.first_timestamp for p in group), max(p.last_timestamp for p in group))
         long_lived = day_span >= STRONG_DAY_SPAN and count >= STRONG_SPAN_COUNT_FACTOR * min_count
         confidence = "strong" if project_count >= min_projects or long_lived else "medium"
@@ -147,6 +150,7 @@ def rank_clusters(
         variants = _variants(group)
         candidates.append(
             Candidate(
+                number=0,
                 candidate_id=leader.phrase_id,
                 label=display_label(leader, kind),
                 count=count,
@@ -157,7 +161,27 @@ def rank_clusters(
                 confidence=confidence,
                 variant_count=len(variants),
                 variants=variants[:_VARIANT_COUNT],
+                project_keys=project_keys,
             )
         )
-    candidates.sort(key=lambda c: (_CONFIDENCE_ORDER[c.confidence], -c.count, -c.project_count, c.candidate_id))
+    candidates.sort(
+        key=lambda c: (
+            REVIEW_SECTIONS.index(review_section(c)),
+            _CONFIDENCE_ORDER[c.confidence],
+            -c.count,
+            -c.project_count,
+            c.candidate_id,
+        )
+    )
+    for number, candidate in enumerate(candidates, start=1):
+        candidate.number = number
     return candidates
+
+
+def review_section(candidate: Candidate) -> str:
+    """Review section key: strong candidates by kind, then medium, then templates."""
+    if candidate.kind == "template":
+        return "template"
+    if candidate.confidence == "medium":
+        return "medium"
+    return candidate.kind

@@ -9,6 +9,8 @@ TRACKED_FILES = (
     ("candidates_json", "candidates.json"),
     ("persona", "persona.md"),
     ("embeddings", "embeddings.npz"),
+    ("conclusions_md", "conclusions.md"),
+    ("conclusions_json", "conclusions.json"),
 )
 
 

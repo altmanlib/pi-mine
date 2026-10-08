@@ -45,7 +45,8 @@ updated: 2026-10-08
 | 通道 | 本机 CPA（CLIProxyAPI），OpenAI 兼容协议 |
 | Base URL | 环境变量 `CLIPROXYAPI_BASE_URL` |
 | API Key | 环境变量 `CLIPROXYAPI_API_KEY`（不入库、不写进仓库配置） |
-| 模型 | 实现 R012 时选定 |
+| 模型 | 默认 `grok-4.5`（推理模型，`max_tokens` 16000）；`synthesize --model` 可换 |
+| 输出格式 | `response_format: json_object` |
 
 输出约束：每条结论必须附依据（候选编号或簇 id、次数、项目数），便于人工核对。
 

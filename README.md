@@ -17,6 +17,7 @@ uv sync
 uv run pi-mine extract
 uv run pi-mine mine [--min-count 3] [--min-projects 3]
 uv run pi-mine mine --embedding   # 可选语义聚类，需 SILICONFLOW_BASE_URL / SILICONFLOW_API_KEY
+uv run pi-mine synthesize         # 可选 LLM 综合结论，经 CPA，需 CLIPROXYAPI_BASE_URL / CLIPROXYAPI_API_KEY
 ls out/
 ```
 
@@ -30,6 +31,8 @@ ls out/
 | `candidates.md` / `candidates.json` | 资产候选清单 |
 | `persona.md` | 用户画像摘要 |
 | `embeddings.npz` | `--embedding` 的向量缓存 |
+| `conclusions.md` / `conclusions.json` | LLM 综合的结论与画像总结，附候选编号依据 |
+| `llm-cache/` | `synthesize` 的回复缓存 |
 
 ## 文档
 
