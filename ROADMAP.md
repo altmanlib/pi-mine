@@ -23,15 +23,15 @@
 
 ## 下一步
 
-- R006 全量试跑与阈值校准 — 对 `~/.pi/agent/sessions` 跑通 extract→mine；人工抽查 Top 候选，调整 `min-count` / `min-projects`、聚类相似度、kind 关键词与假阳性规则（依赖 R005）
+- R007 候选裁定工作流 — 明确人工如何把强候选标成 AGENTS / skill / prompt / discard；是否需要 `already_codified` 对照现有 AGENTS（依赖 R006）
 
 ## 规划中
 
-- R007 候选裁定工作流 — 明确人工如何把强候选标成 AGENTS / skill / prompt / discard；是否需要 `already_codified` 对照现有 AGENTS（依赖 R006；触发：首轮候选清单可用后）
 - R008 可选 embedding / LLM 簇命名 — 仅当 TF-IDF 同义拆散严重或画像可读性不足时启动；默认不进主路径；供应商/模型已定为 SiliconFlow `Qwen/Qwen3-Embedding-8B`（`dimensions=1024`）（依赖 R006、R009；触发：人工抽查判定需要）
 
 ## 已完成
 
+- R006 全量试跑与阈值校准 — 抽查 Top 候选后：低信息短句（同意/hi/选项回答）移入 extract 过滤；纠偏、工作流、工具词表扩充；`strong` 改为以项目覆盖为主（长期高频为辅）；裸路径簇不入候选；基线 8523 utterances → 149 candidates（strong 114）；35 tests
 - R005 cluster + rank + render — `cluster`（TF-IDF leader 聚类）/ `rank`（kind 规则 + strong/medium）/ `render` / `mine` 编排；`mine` 命令可用并写出 candidates.md/json 与 persona.md；`fsutil.atomic_text_writer`；34 tests；真实数据 8675 utterances → 7148 phrases → 6711 clusters → 160 candidates（strong 132）
 - R004 normalize 近重复与清洗 — `services/normalize.py`：`normalize_key` / `match_key`、确认与纠偏词表、fork 去重、bigram Jaccard 近重复合并为 `Phrase`；确认过滤迁入 normalize；28 tests；真实数据 8694 条 → 7148 phrases（0.2s）
 - R003 实现 extract — `services.extract` 流式读 JSONL；文本块拼接；slash/确认句过滤；写出 `out/utterances.jsonl`；17 tests；真实目录冒烟 1295 files → 8685 utterances / 90 projects

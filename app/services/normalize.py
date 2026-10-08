@@ -8,10 +8,21 @@ from collections import Counter, defaultdict
 
 from app.models import NormalizeResult, Phrase, Utterance
 
-# Whole-utterance confirmations compared against the normalized key. Instructions such
-# as "执行" or "开始" are intentionally absent: they are workflow triggers, not confirmations.
+# Low-information whole-utterance replies (confirmations, greetings) compared against the
+# normalized key. Instructions such as "执行" or "开始" are intentionally absent: they are
+# workflow triggers. Single-character choice answers ("1", "A") are handled separately.
 CONFIRM_KEYS = frozenset(
     {
+        "同意",
+        "要的",
+        "需要",
+        "需要的",
+        "没问题了",
+        "可以了",
+        "好了",
+        "hi",
+        "hello",
+        "你好",
         "好",
         "好的",
         "好吧",
@@ -46,6 +57,11 @@ CORRECTION_MARKERS = (
     "不是",
     "停一下",
     "重新",
+    "不需要",
+    "不用",
+    "不写",
+    "别再",
+    "never",
     "don't",
     "do not",
     "stop",
@@ -71,6 +87,7 @@ def normalize_key(text: str) -> str:
     return collapsed[start:end]
 
 
+_CHOICE_ANSWER_RE = re.compile(r"[a-z0-9]")
 _PATH_RE = re.compile(r"\S*/\S*")
 _NUMBER_RE = re.compile(r"\d+")
 
@@ -92,7 +109,8 @@ def _is_edge_noise(char: str) -> bool:
 
 def is_confirm_utterance(text: str) -> bool:
     """Return True for low-information confirmation short replies."""
-    return normalize_key(text) in CONFIRM_KEYS
+    key = normalize_key(text)
+    return key in CONFIRM_KEYS or _CHOICE_ANSWER_RE.fullmatch(key) is not None
 
 
 def is_correction_key(norm_key: str) -> bool:

@@ -39,7 +39,11 @@ def test_normalize_key_folds_case_width_whitespace_and_edges() -> None:
 def test_confirm_uses_normalized_key() -> None:
     assert is_confirm_utterance("好的。")
     assert is_confirm_utterance("OK!")
+    assert is_confirm_utterance("A")
+    assert is_confirm_utterance("1")
+    assert is_confirm_utterance("Hi")
     assert not is_confirm_utterance("执行")
+    assert not is_confirm_utterance("12")
     assert not is_confirm_utterance("好的，帮我提交")
 
 

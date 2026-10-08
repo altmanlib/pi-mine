@@ -60,19 +60,24 @@ def test_classify_kind_rules() -> None:
 def test_rank_filters_by_count_and_grades_confidence() -> None:
     phrases = [
         phrase("commit", count=4, projects=("a", "b", "c")),
-        phrase("push", count=3, projects=("a",), first="2026-01-01T00:00:00Z", last="2026-03-01T00:00:00Z"),
+        phrase("push", count=9, projects=("a",), first="2026-01-01T00:00:00Z", last="2026-05-01T00:00:00Z"),
         phrase("发版", count=3, projects=("a",)),
         phrase("hi", count=2),
     ]
     clusters = [[0], [1], [2], [3]]
     candidates = rank_clusters(phrases, clusters, min_count=3, min_projects=3)
     assert [(c.label, c.confidence, c.suggested_dest) for c in candidates] == [
-        ("commit", "strong", "skill"),
         ("push", "strong", "skill"),
+        ("commit", "strong", "skill"),
         ("发版", "medium", "prompt"),
     ]
-    assert candidates[1].day_span == 59
-    assert candidates[0].project_count == 3
+    assert candidates[0].day_span == 120
+    assert candidates[1].project_count == 3
+
+
+def test_rank_skips_bare_paths() -> None:
+    phrases = [phrase("/var/folders/zn/x/y.png", count=5), phrase("~/code/demo", count=5)]
+    assert rank_clusters(phrases, [[0], [1]], min_count=3, min_projects=1) == []
 
 
 def test_display_cwd_replaces_home_prefix() -> None:
