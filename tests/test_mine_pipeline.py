@@ -3,12 +3,14 @@
 import json
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 from app.cli import cli
 from app.models import MineSummary, Phrase
 from app.services.cluster import cluster_phrases
 from app.services.extract import extract_sessions
+from app.services.mine import mine_utterances
 from app.services.normalize import is_correction_key, mask_params, normalize_key
 from app.services.rank import classify_kind, display_label, rank_clusters
 from app.services.render import display_cwd, render_candidates_md
@@ -117,6 +119,7 @@ def test_render_candidates_md_groups_by_destination() -> None:
         out_dir="out",
         min_count=3,
         min_projects=3,
+        cluster_backend="tfidf",
         utterance_count=17,
         phrase_count=3,
         cluster_count=3,
@@ -149,7 +152,8 @@ def test_mine_cli_writes_outputs(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     summary = json.loads(result.output)
     assert summary["utterance_count"] == 6
-    assert summary["candidate_count"] == summary["phrase_count"] - 0 or summary["candidate_count"] >= 1
+    assert summary["candidate_count"] >= 1
+    assert summary["cluster_backend"] == "tfidf"
 
     payload = json.loads((tmp_path / "candidates.json").read_text(encoding="utf-8"))
     assert len(payload["candidates"]) == summary["candidate_count"]
@@ -163,3 +167,32 @@ def test_mine_cli_requires_extract_first(tmp_path: Path) -> None:
     result = CliRunner().invoke(cli, ["mine", "--out", str(tmp_path)])
     assert result.exit_code != 0
     assert "run extract first" in result.output
+
+
+def test_mine_with_embedding_fetch_uses_cached_vectors(tmp_path: Path) -> None:
+    extract_sessions(FIXTURES, tmp_path)
+    sent: list[str] = []
+
+    def fetch(batch: list[str]) -> list[list[float]]:
+        sent.extend(batch)
+        # Every text gets the same direction, so all phrases collapse into one cluster.
+        return [[1.0, 0.0] for _ in batch]
+
+    summary = mine_utterances(tmp_path, min_count=1, min_projects=3, embedding_fetch=fetch)
+    assert summary.cluster_backend == "embedding"
+    assert summary.cluster_count == 1
+    assert len(sent) == summary.phrase_count
+    assert (tmp_path / "embeddings.npz").is_file()
+
+    sent.clear()
+    mine_utterances(tmp_path, min_count=1, min_projects=3, embedding_fetch=fetch)
+    assert sent == []
+
+
+def test_mine_cli_embedding_requires_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SILICONFLOW_BASE_URL", raising=False)
+    monkeypatch.delenv("SILICONFLOW_API_KEY", raising=False)
+    extract_sessions(FIXTURES, tmp_path)
+    result = CliRunner().invoke(cli, ["mine", "--out", str(tmp_path), "--embedding"])
+    assert result.exit_code != 0
+    assert "SILICONFLOW_API_KEY" in result.output

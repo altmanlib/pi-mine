@@ -7,12 +7,14 @@ import click
 from app.models import MineSummary
 from app.options import json_option, out_dir_option
 from app.output import output_json, print_lines
+from app.services.embedding import EmbeddingConfig, EmbeddingError, Fetcher, siliconflow_fetcher
 from app.services.mine import mine_utterances
 
 
 def _summary_lines(summary: MineSummary) -> list[str]:
     return [
         f"out_dir: {summary.out_dir}",
+        f"cluster_backend: {summary.cluster_backend}",
         f"utterance_count: {summary.utterance_count}",
         f"fork_duplicate_count: {summary.fork_duplicate_count}",
         f"phrase_count: {summary.phrase_count}",
@@ -29,12 +31,20 @@ def _summary_lines(summary: MineSummary) -> list[str]:
 @out_dir_option
 @click.option("--min-count", type=click.IntRange(min=1), default=3, show_default=True, help="Minimum merged occurrences")
 @click.option("--min-projects", type=click.IntRange(min=1), default=3, show_default=True, help="Project coverage for strong")
+@click.option(
+    "--embedding",
+    "use_embedding",
+    is_flag=True,
+    default=False,
+    help="Cluster with SiliconFlow embeddings (sends phrase texts; needs SILICONFLOW_* env)",
+)
 @json_option
-def mine_cmd(out_dir: Path, min_count: int, min_projects: int, as_json: bool) -> None:
+def mine_cmd(out_dir: Path, min_count: int, min_projects: int, use_embedding: bool, as_json: bool) -> None:
     """Cluster phrases and render candidates + persona."""
     try:
-        summary = mine_utterances(out_dir, min_count, min_projects)
-    except FileNotFoundError as error:
+        fetch: Fetcher | None = siliconflow_fetcher(EmbeddingConfig.from_env()) if use_embedding else None
+        summary = mine_utterances(out_dir, min_count, min_projects, fetch)
+    except (FileNotFoundError, EmbeddingError) as error:
         raise click.ClickException(str(error)) from error
     if as_json:
         output_json(summary.to_dict())

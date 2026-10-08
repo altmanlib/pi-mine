@@ -74,7 +74,7 @@ def render_candidates_md(candidates: list[Candidate], summary: MineSummary) -> s
         "",
         f"- 发言 {summary.utterance_count} → 句子 {summary.phrase_count} → 簇 {summary.cluster_count}"
         f" → 候选 {summary.candidate_count}（strong {summary.strong_count}）",
-        f"- 阈值：min-count {summary.min_count}，min-projects {summary.min_projects}",
+        f"- 聚类：{summary.cluster_backend}；阈值：min-count {summary.min_count}，min-projects {summary.min_projects}",
         "- 句式中 ‹路径› / ‹数字› 为参数占位；变体列为簇内合并的不同写法及次数",
         "",
     ]

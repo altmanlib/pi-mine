@@ -101,6 +101,7 @@ class MineSummary:
     out_dir: str
     min_count: int
     min_projects: int
+    cluster_backend: str
     utterance_count: int
     phrase_count: int
     cluster_count: int

@@ -3,7 +3,8 @@
 from pathlib import Path
 
 from app.models import MineSummary
-from app.services.cluster import cluster_phrases
+from app.services.cluster import EMBEDDING_SIMILARITY, cluster_phrases, leader_cluster
+from app.services.embedding import EMBEDDINGS_CACHE_FILENAME, Fetcher, embed_texts
 from app.services.extract import UTTERANCES_FILENAME, read_utterances
 from app.services.fsutil import atomic_text_writer
 from app.services.normalize import normalize_utterances
@@ -20,21 +21,38 @@ def _write(path: Path, content: str) -> None:
         handle.write(content)
 
 
-def mine_utterances(out_dir: Path, min_count: int, min_projects: int) -> MineSummary:
-    """Read ``utterances.jsonl`` from out_dir and write candidates and persona files."""
+def mine_utterances(
+    out_dir: Path,
+    min_count: int,
+    min_projects: int,
+    embedding_fetch: Fetcher | None = None,
+) -> MineSummary:
+    """Read ``utterances.jsonl`` from out_dir and write candidates and persona files.
+
+    Clusters with local TF-IDF by default; with ``embedding_fetch`` clusters phrase
+    embeddings instead (vectors cached in out_dir).
+    """
     source = out_dir / UTTERANCES_FILENAME
     if not source.is_file():
         raise FileNotFoundError(f"{source} not found; run extract first")
 
     utterances = read_utterances(source)
     normalized = normalize_utterances(utterances)
-    clusters = cluster_phrases(normalized.phrases)
+    phrases = normalized.phrases
+    if embedding_fetch is None:
+        backend = "tfidf"
+        clusters = cluster_phrases(phrases)
+    else:
+        backend = "embedding"
+        vectors = embed_texts([p.text for p in phrases], embedding_fetch, out_dir / EMBEDDINGS_CACHE_FILENAME)
+        clusters = leader_cluster(vectors, EMBEDDING_SIMILARITY) if phrases else []
     candidates = rank_clusters(normalized.phrases, clusters, min_count, min_projects)
 
     summary = MineSummary(
         out_dir=str(out_dir),
         min_count=min_count,
         min_projects=min_projects,
+        cluster_backend=backend,
         utterance_count=len(utterances),
         phrase_count=len(normalized.phrases),
         cluster_count=len(clusters),
