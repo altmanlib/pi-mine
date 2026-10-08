@@ -32,7 +32,7 @@
 | 包管理 | 仅 `uv`（`uv add` / `uv remove`）；禁止 pip 或手编依赖版本后不 `uv lock` |
 | CLI | Click |
 | 运行时依赖 | 现阶段仅 `click`；`scikit-learn` 等到 `mine` 聚类再加 |
-| 分析默认 | 离线统计；LLM 仅可选后置 |
+| 分析默认 | 离线统计；可选 embedding / LLM 后置允许走外部 API，但不得上传原始 sessions |
 | 类型检查 | pyright `standard` |
 | 缓存目录 | `.cache/`（pytest / ruff），不入库 |
 | 默认产出 | 仓库内 `out/`；本工具默认在仓库目录运行 |
@@ -72,7 +72,7 @@ out/               # 生成物，gitignore
 ## 6. 明确不做
 
 - 自动写回个人 `AGENTS.md` 或生成 skill 目录
-- 上传 sessions / 衍生语料到外部服务
+- 上传原始 session 文件到外部服务；可选 embedding / LLM 仅允许发送 normalize 后的 phrase 代表句，不得发送原始 JSONL 或完整 utterance 导出
 - 第一版强制 embedding 或强制 LLM 总结
 - 会话清理 / 删除（与 `sessions-clean` 无关）
 

@@ -15,7 +15,7 @@
 
 ## 待决策
 
-- R009 可选 embedding 是否允许外发 phrase — SiliconFlow `Qwen/Qwen3-Embedding-8B` 已定为 R008 供应商/模型（见 `docs/design/2026-10-08-02-optional-embedding.md`）；启用会把 normalize 后的代表句发到外部 API，与现行「不上传衍生语料」冲突。需确认：禁止外发 / 仅本地模型 / 允许 SiliconFlow 且限定只发 phrase。阻塞 R008 实现
+无
 
 ## 进行中
 
@@ -27,7 +27,7 @@
 
 ## 规划中
 
-- R008 可选 embedding / LLM 簇命名 — 仅当 TF-IDF 同义拆散严重或画像可读性不足时启动；默认不进主路径；供应商/模型已定为 SiliconFlow `Qwen/Qwen3-Embedding-8B`（`dimensions=1024`）（依赖 R006、R009；触发：人工抽查判定需要）
+- R008 可选 embedding / LLM 簇命名 — 仅当 TF-IDF 同义拆散严重或画像可读性不足时启动；默认不进主路径；供应商/模型 SiliconFlow `Qwen/Qwen3-Embedding-8B`（`dimensions=1024`）；允许外发 normalize 后的 phrase 代表句，禁止上传原始 sessions（依赖 R006；触发：人工抽查判定需要）
 
 ## 已完成
 

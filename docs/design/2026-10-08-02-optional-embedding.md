@@ -11,7 +11,7 @@ updated: 2026-10-08
 
 为路线图 [R008](../../ROADMAP.md)（可选 embedding / LLM 簇命名）预先固定供应商与模型，避免触发时再选型。
 
-本设计**不改变**第一版主路径：主路径仍是 TF-IDF / 确定性聚类。仅在 R006 人工抽查判定同义拆散严重或画像可读性不足时，才允许启用可选 `--embedding` 路径。
+本设计**不改变**第一版主路径：主路径仍是 TF-IDF / 确定性聚类。仅在人工抽查判定同义拆散严重或画像可读性不足时，才允许启用可选 `--embedding` 路径。
 
 ## 2. 已定选择
 
@@ -35,22 +35,22 @@ updated: 2026-10-08
 - Quickstart：<https://api-docs.siliconflow.cn/docs/userguide/quickstart>
 - Embeddings：<https://api-docs.siliconflow.cn/docs/api/embeddings-post>
 
-## 3. 触发与边界
+## 3. 数据外发边界
 
-- 触发条件仍以 R008 为准：仅当 TF-IDF 同义拆散严重或画像可读性不足
-- 默认不进 `mine` 主路径；不把 embedding 设为强制依赖
-- 输入应为 **normalize 后的 phrase 代表句**，不要把完整 session JSONL 外发
-- 实现时须可关闭、可离线回退到纯本地路径
+已拍板：
 
-## 4. 与现有「不上传」约束的关系
+- **禁止**：上传原始 session JSONL，或把完整 utterance 导出原样发给外部服务
+- **允许**：可选 embedding / LLM 路径把 **normalize 后的 phrase 代表句** 发给 SiliconFlow
+- 默认仍不进 `mine` 主路径；实现时须可关闭、可回退到纯本地 TF-IDF
 
-`AGENTS.md` 与管线设计目前写明：不上传 sessions / 衍生语料到外部服务。
+## 4. 触发条件
 
-可选 SiliconFlow embedding 会把 phrase 文本发到外部 API，与该约束冲突。是否放行、放行范围与脱敏规则见 ROADMAP「待决策」R009；**在 R009 拍板前不得实现外发调用**。
+- 仍以 R008 为准：仅当 TF-IDF 同义拆散严重或画像可读性不足
+- 不把 embedding 设为强制依赖
 
 ## 5. 明确不做
 
 - 第一版强制 embedding
-- 在 R006 完成前启动 R008 实现
 - 把 API key 写入仓库或 `out/`
 - 用 embedding 替换 TF-IDF 作为唯一聚类手段
+- 上传原始 sessions
