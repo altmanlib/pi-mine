@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pi-mine"
+version = "0.1.0"
+description = "Mine frequent user phrases and constraints from Pi coding-agent sessions"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "click>=8.1",
+]
+
+[project.scripts]
+pi-mine = "app.cli:cli"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.uv]
+package = true
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.414",
+    "pytest>=8.0",
+    "ruff>=0.9",
+]
+
+[tool.ruff]
+line-length = 130
+target-version = "py314"
+cache-dir = ".cache/ruff"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.pytest.ini_options]
+cache_dir = ".cache/pytest"
+testpaths = ["tests"]
+
+[tool.pyright]
+pythonVersion = "3.14"
+include = ["app", "tests"]
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"
